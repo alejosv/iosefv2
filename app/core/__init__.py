@@ -4,12 +4,51 @@ import os
 
 from os import path
 
+from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
 
 class Core():
 
     app: Flask = None
+
+    @staticmethod
+    def create_app() -> Flask:
+
+        #: Obtenemos el nombre del directorio del proyecto que esta dos niveles arriba del directorio actual
+        project_path = path.dirname(path.dirname(__file__))
+
+        #: Creamos la aplicación
+        Core.app = Flask(
+            __name__,
+            template_folder=path.join(project_path, 'templates'),
+            static_folder=path.join(project_path, 'static'),
+            static_url_path='/static'
+        )
+
+        #: Configuramos la aplicación
+        Core.app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+        Core.app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
+        Core.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = Core.str_to_bool(os.environ['SQLALCHEMY_TRACK_MODIFICATIONS'])
+        Core.app.config['SQLALCHEMY_ECHO'] = Core.str_to_bool(os.environ['SQLALCHEMY_ECHO'])
+
+        #: Inicializamos el LoginManager
+        login_manager = LoginManager()
+
+        #: Inicializamos el LoginManager
+        login_manager.init_app(Core.app)
+
+        #: Definimos la función que carga el usuario
+        @login_manager.user_loader
+        def load_user(user_id):
+            return None
+        
+
+        #: Obtenemos el directorio de los módulos
+        modules_path = path.join(project_path, 'modules')
+        Core.load_modules(Core.app, modules_path)
+
+        return Core.app
 
     @staticmethod
     def load_modules(app: Flask, modules_path: str):
@@ -76,37 +115,12 @@ class Core():
     
 
     @staticmethod
-    def create_app() -> Flask:
+    def load_dotenv(dotenv_path: str):
+        load_dotenv(dotenv_path)
 
-        #: Obtenemos el nombre del directorio del proyecto que esta dos niveles arriba del directorio actual
-        project_path = path.dirname(path.dirname(__file__))
 
-        #: Creamos la aplicación
-        Core.app = Flask(
-            __name__,
-            template_folder=path.join(project_path, 'templates'),
-            static_folder=path.join(project_path, 'static'),
-            static_url_path='/static'
-        )
-
-        print(Core.app.template_folder)
-
-        #: Configuramos la aplicación
-
-        #: Inicializamos el LoginManager
-        login_manager = LoginManager()
-
-        #: Inicializamos el LoginManager
-        login_manager.init_app(Core.app)
-
-        #: Definimos la función que carga el usuario
-        @login_manager.user_loader
-        def load_user(user_id):
-            return None
-        
-
-        #: Obtenemos el directorio de los módulos
-        modules_path = path.join(project_path, 'modules')
-        Core.load_modules(Core.app, modules_path)
-
-        return Core.app
+    #: Método que converte valores string en valores booleanos
+    @staticmethod
+    def str_to_bool(value: str) -> bool:
+        return value.lower() in ("yes", "Yes", "true", "True", "t", "1", "on", "On", "y", "Y")
+    
