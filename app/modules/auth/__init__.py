@@ -4,7 +4,6 @@ from flask.views import MethodView
 from flask import render_template
 from flask_login import login_required
 
-
 class AuthView(MethodView):
 
     # decorators = [login_required]

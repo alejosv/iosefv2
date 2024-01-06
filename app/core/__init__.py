@@ -1,12 +1,14 @@
 # -*- encoding: utf-8 -*-
 
 import os
+import requests
 
 from os import path
 
 from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
+# from flask_ipban import IpBan
 
 class Core():
 
@@ -26,11 +28,26 @@ class Core():
             static_url_path='/static'
         )
 
+        #: Hacemos un GET a la URL https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level1.netset para obtener la lista de IPs bloqueadas
+        # black_list = requests.get('https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level1.netset').text.split('\n')
+
+
         #: Configuramos la aplicación
         Core.app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
         Core.app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
         Core.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = Core.str_to_bool(os.environ['SQLALCHEMY_TRACK_MODIFICATIONS'])
         Core.app.config['SQLALCHEMY_ECHO'] = Core.str_to_bool(os.environ['SQLALCHEMY_ECHO'])
+
+        #: Inicializamos el IpBan
+        #ip_ban = IpBan(
+        #    persist=True,
+        #    abuse_IPDB_config=dict(key='98c6a2386fd34e0e79f6b140f87ce23e10158a549b13e02360b1a3a963b6a06faa479a21c1f56233')
+        #)
+        #ip_ban.init_app(Core.app)
+
+        #: Agregamos las IPs a la lista negra
+        #for ip in black_list:
+        #    ip_ban.block(ip, 'blacklist', 'IP bloqueada por el sistema')
 
         #: Inicializamos el LoginManager
         login_manager = LoginManager()
@@ -101,7 +118,7 @@ class Core():
 
                     #: Agregamos la ruta del módulo a la aplicación
                     module_paths = [
-                        [module_path, ['GET'], 'main-' + endpoint],
+                        [module_path, ['GET', 'POST'], 'main-' + endpoint],
                         [module_path + '/<int:id>', ['GET', 'POST', 'PUT', 'DELETE'], 'main-id' + endpoint],
                         [module_path + '/<int:id>/<string:action>', ['GET', 'POST', 'PUT', 'DELETE'], 'main-id-action' + endpoint],
                     ]
